@@ -26,6 +26,8 @@ const animToggle = document.getElementById('do-animate');
 const DEG2RAD = Math.PI / 180;
 const RAD2DEG = 1 / DEG2RAD;
 let sliders = {};
+let backflip_buffer;
+let current_timestep = 0;
 
 // Global Functions
 const setColor = color => {
@@ -299,22 +301,85 @@ const updateAngles = () => {
     for (const name in resetJointValues) resetJointValues[name] = 0;
     viewer.setJointValues(resetJointValues);
 
-    // animate the legs
-    const time = Date.now() / 3e2;
-    for (let i = 1; i <= 6; i++) {
+    if(backflip_buffer)
+    {
+        var plan_timesteps = backflip_buffer.byteLength / (4*22)
 
-        const offset = i * Math.PI / 3;
-        const ratio = Math.max(0, Math.sin(time + offset));
+        if(current_timestep>=plan_timesteps) {
+            current_timestep=0;
+        }
 
-        viewer.setJointValue(`HP${ i }`, THREE.MathUtils.lerp(30, 0, ratio) * DEG2RAD);
-        viewer.setJointValue(`KP${ i }`, THREE.MathUtils.lerp(90, 150, ratio) * DEG2RAD);
-        viewer.setJointValue(`AP${ i }`, THREE.MathUtils.lerp(-30, -60, ratio) * DEG2RAD);
+        var tau_mult = 1.2;
+        
+        function get_plan_at_time(timestep)
+        {
+            //console.log(timestep)
+            if(timestep < 0) {
+                console.log("Timesteps is too low, not allowed.")
+            }
 
-        viewer.setJointValue(`TC${ i }A`, THREE.MathUtils.lerp(0, 0.065, ratio));
-        viewer.setJointValue(`TC${ i }B`, THREE.MathUtils.lerp(0, 0.065, ratio));
+            if(timestep > plan_timesteps -1) {
+                console.log("Timesteps is too high, not allowed.")
+            }
+            
+            return new Float32Array(backflip_buffer, timestep * 22*4, 22);
+        }
 
-        viewer.setJointValue(`W${ i }`, window.performance.now() * 0.001);
+        var current_step = get_plan_at_time(current_timestep)
 
+        var q_des_front = new THREE.Vector3( 0.0, current_step[3], current_step[4]);
+        var q_des_rear = new THREE.Vector3( 0.0, current_step[5], current_step[6]);
+        var qd_des_front = new THREE.Vector3( 0.0, current_step[10], current_step[11]);
+        var qd_des_rear  = new THREE.Vector3( 0,0, current_step[12], current_step[13]);
+        var tau_front = new THREE.Vector3( 0.0, tau_mult * current_step[14+0] / 2.0, tau_mult * current_step[14+1] / 2.0);
+        var tau_rear = new THREE.Vector3( 0.0, tau_mult * current_step[14+2] / 2.0, tau_mult * current_step[14+3] / 2.0 );
+
+        //MIT cheetah
+
+        // Front Hip
+        viewer.setJointValue(`abduct_fr_to_thigh_fr_j`, current_step[3]);
+        viewer.setJointValue(`abduct_fl_to_thigh_fl_j`, current_step[3]);
+        // Front Knee
+        viewer.setJointValue(`thigh_fr_to_knee_fr_j`, current_step[4]);
+        viewer.setJointValue(`thigh_fl_to_knee_fl_j`, current_step[4]);
+        // Hind Hip
+        viewer.setJointValue(`abduct_hr_to_thigh_hr_j`, current_step[5]);
+        viewer.setJointValue(`abduct_hl_to_thigh_hl_j`, current_step[5]);
+        // Hind Knee
+        viewer.setJointValue(`thigh_hr_to_knee_hr_j`, current_step[6]);
+        viewer.setJointValue(`thigh_hl_to_knee_hl_j`, current_step[6]);
+
+        //A1
+
+        // Front Hip
+        viewer.setJointValue(`FR_upper_joint`, -current_step[3]);
+        viewer.setJointValue(`FL_upper_joint`, -current_step[3]);
+        // Front Knee
+        viewer.setJointValue(`FR_lower_joint`, -current_step[4]);
+        viewer.setJointValue(`FL_lower_joint`, -current_step[4]);
+        // Hind Hip
+        viewer.setJointValue(`RR_upper_joint`, -current_step[5]);
+        viewer.setJointValue(`RL_upper_joint`, -current_step[5]);
+        // Hind Knee
+        viewer.setJointValue(`RR_lower_joint`, -current_step[6]);
+        viewer.setJointValue(`RL_lower_joint`, -current_step[6]);
+
+        //Go1
+
+        // Front Hip
+        viewer.setJointValue(`FR_thigh_joint`, -current_step[3]);
+        viewer.setJointValue(`FL_thigh_joint`, -current_step[3]);
+        // Front Knee
+        viewer.setJointValue(`FR_calf_joint`, -current_step[4]);
+        viewer.setJointValue(`FL_calf_joint`, -current_step[4]);
+        // Hind Hip
+        viewer.setJointValue(`RR_thigh_joint`, -current_step[5]);
+        viewer.setJointValue(`RL_thigh_joint`, -current_step[5]);
+        // Hind Knee
+        viewer.setJointValue(`RR_calf_joint`, -current_step[6]);
+        viewer.setJointValue(`RL_calf_joint`, -current_step[6]);
+
+        current_timestep++;
     }
 
 };
@@ -338,7 +403,7 @@ const updateList = () => {
             const urdf = e.target.getAttribute('urdf');
             const color = e.target.getAttribute('color');
 
-            viewer.up = '-Z';
+            viewer.up = '+Z';
             document.getElementById('up-select').value = viewer.up;
             viewer.urdf = urdf;
             animToggle.classList.add('checked');
@@ -363,3 +428,41 @@ document.addEventListener('WebComponentsReady', () => {
     viewer.camera.position.set(-5.5, 3.5, 5.5);
 
 });
+
+function ab2str(buf) {
+    return String.fromCharCode.apply(null, new Uint16Array(buf));
+}
+function str2ab(str) {
+    var buf = new ArrayBuffer(str.length*2); // 2 bytes for each char
+    var bufView = new Uint16Array(buf);
+    for (var i=0, strLen=str.length; i < strLen; i++) {
+    bufView[i] = str.charCodeAt(i);
+    }
+    return buf;
+}
+
+const loader = new THREE.FileLoader();
+
+//load a text file and output the result to the console
+loader.setResponseType( 'arraybuffer' ).load(
+    // resource URL
+    '../../../urdf/Mini_Cheetah/backflip.dat',
+
+    // onLoad callback
+    function ( buffer ) {
+        backflip_buffer = buffer;
+        console.log(buffer.byteLength);
+        console.log(buffer.byteLength / (4*22));
+    },
+
+    // onProgress callback
+    function ( xhr ) {
+        console.log( (xhr.loaded / xhr.total * 100) + '% loaded' );
+    },
+
+    // onError callback
+    function ( err ) {
+        console.error( 'An error happened' );
+    }
+);
+

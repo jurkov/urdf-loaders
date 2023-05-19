@@ -15,9 +15,12 @@
 
         <div id="menu">
             <ul id="urdf-options">
-                <li urdf="../../../urdf/T12/urdf/T12_flipped.URDF" color="#E91E63">ATHLETE</li>
+                <!--<li urdf="../../../urdf/T12/urdf/T12_flipped.URDF" color="#E91E63">ATHLETE</li>
                 <li urdf="../../../urdf/TriATHLETE/urdf/TriATHLETE_flipped.URDF" color="#009688">TriATHLETE</li>
-                <li urdf="../../../urdf/TriATHLETE_Climbing/urdf/TriATHLETE_flipped.URDF" color="#FFB300">TriATHLETE Climbing</li>
+                <li urdf="../../../urdf/TriATHLETE_Climbing/urdf/TriATHLETE_flipped.URDF" color="#FFB300">TriATHLETE Climbing</li>-->
+                <li urdf="../../../urdf/Mini_Cheetah/mini_cheetah.urdf" color="#FFB300">Mini Cheetah</li>
+                <li urdf="../../../urdf/A1/urdf/a1.urdf" color="#FFB300">A1</li>
+                <li urdf="../../../urdf/Go1/urdf/go1.urdf" color="#FFB300">Go1</li>
             </ul>
 
             <div id="controls" class="hidden">
@@ -35,14 +38,14 @@
                         <option value="-X">-X</option>
                         <option value="+Y">+Y</option>
                         <option value="-Y">-Y</option>
-                        <option value="+Z">+Z</option>
-                        <option value="-Z" selected>-Z</option>
+                        <option value="+Z" selected>+Z</option>
+                        <option value="-Z">-Z</option>
                     </select>
                 </label>
                 <ul></ul>
             </div>
         </div>
-        <urdf-viewer up="-Z" display-shadow tabindex="0"></urdf-viewer>
+        <urdf-viewer up="+Z" display-shadow tabindex="0"></urdf-viewer>
 
         <script src="./src/index.js"></script>
     </body>

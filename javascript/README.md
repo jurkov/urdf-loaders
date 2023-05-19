@@ -1,15 +1,14 @@
-# urdf-loader
+# urdf-loader with urdf of MIT cheetah, Unitree A1 and Unitree Go1 with backflip animation
+* The urdf files are taken from https://github.com/HybridRobotics/GenLoco
+* The ´backflip.dat´ is taken from https://github.com/MIT-biomimetics/Cheetah-Software/raw/master/user/MIT_Controller/Controllers/BackFlip/backflip.dat
+* The code to read the ´backflip.dat´ is inspired from https://github.com/MIT-biomimetics/Cheetah-Software/
 
 [![npm version](https://img.shields.io/npm/v/urdf-loader.svg?style=flat-square)](https://www.npmjs.com/package/urdf-loader)
-[![build](https://img.shields.io/github/actions/workflow/status/gkjohnson/urdf-loaders/node.js.yml?style=flat-square&label=build&branch=master)](https://github.com/gkjohnson/urdf-loaders/actions)
+[![build](https://img.shields.io/github/actions/workflow/status/jurkov/urdf-loaders/node.js.yml?style=flat-square&label=build&branch=master)](https://github.com/gkjohnson/urdf-loaders/actions)
 
 Utilities for loading URDF files into THREE.js and a Web Component that loads and renders the model.
 
-[Basic loader example here!](https://gkjohnson.github.io/urdf-loaders/javascript/example/bundle/simple.html)
-
-[VR example here!](https://gkjohnson.github.io/urdf-loaders/javascript/example/bundle/vr.html)
-
-[Drag and drop web component tool here!](https://gkjohnson.github.io/urdf-loaders/javascript/example/bundle/index.html)
+[Backflip Demo](https://jurkov.github.io/urdf-loaders/javascript/example/bundle/index.html)
 
 ![Example](/javascript/docs/javascript-example.gif)
 
