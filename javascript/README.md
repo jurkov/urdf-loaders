@@ -2,6 +2,7 @@
 * The urdf files are taken from https://github.com/HybridRobotics/GenLoco
 * The ´backflip.dat´ is taken from https://github.com/MIT-biomimetics/Cheetah-Software/raw/master/user/MIT_Controller/Controllers/BackFlip/backflip.dat
 * The code to read the ´backflip.dat´ is inspired from https://github.com/MIT-biomimetics/Cheetah-Software/
+* The other dat files are from https://github.com/Chenaah/Cheetah-Software-RL/tree/master/config/
 
 [![npm version](https://img.shields.io/npm/v/urdf-loader.svg?style=flat-square)](https://www.npmjs.com/package/urdf-loader)
 [![build](https://img.shields.io/github/actions/workflow/status/jurkov/urdf-loaders/node.js.yml?style=flat-square&label=build&branch=master)](https://github.com/gkjohnson/urdf-loaders/actions)
