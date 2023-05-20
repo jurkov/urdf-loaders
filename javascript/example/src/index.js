@@ -303,14 +303,8 @@ const updateAngles = () => {
 
     if(backflip_buffer)
     {
-        var plan_timesteps = backflip_buffer.byteLength / (4*22)
+        var plan_timesteps = backflip_buffer.byteLength / (4*22);
 
-        if(current_timestep>=plan_timesteps) {
-            current_timestep=0;
-        }
-
-        var tau_mult = 1.2;
-        
         function get_plan_at_time(timestep)
         {
             //console.log(timestep)
@@ -325,63 +319,98 @@ const updateAngles = () => {
             return new Float32Array(backflip_buffer, timestep * 22*4, 22);
         }
 
-        var current_step = get_plan_at_time(current_timestep)
+        function set_robot_joint_rotation(step) {
+            if(viewer.robot)
+            {
+                viewer.robot.rotation.y = step[2];
+            }   
+            //MIT cheetah
+                
+            // Front Hip
+            viewer.setJointValue(`abduct_fr_to_thigh_fr_j`, step[3]);
+            viewer.setJointValue(`abduct_fl_to_thigh_fl_j`, step[3]);
+            // Front Knee
+            viewer.setJointValue(`thigh_fr_to_knee_fr_j`, step[4]);
+            viewer.setJointValue(`thigh_fl_to_knee_fl_j`, step[4]);
+            // Hind Hip
+            viewer.setJointValue(`abduct_hr_to_thigh_hr_j`, step[5]);
+            viewer.setJointValue(`abduct_hl_to_thigh_hl_j`, step[5]);
+            // Hind Knee
+            viewer.setJointValue(`thigh_hr_to_knee_hr_j`, step[6]);
+            viewer.setJointValue(`thigh_hl_to_knee_hl_j`, step[6]);
+    
+            //A1
+    
+            // Front Hip
+            viewer.setJointValue(`FR_upper_joint`, -step[3]);
+            viewer.setJointValue(`FL_upper_joint`, -step[3]);
+            // Front Knee
+            viewer.setJointValue(`FR_lower_joint`, -step[4]);
+            viewer.setJointValue(`FL_lower_joint`, -step[4]);
+            // Hind Hip
+            viewer.setJointValue(`RR_upper_joint`, -step[5]);
+            viewer.setJointValue(`RL_upper_joint`, -step[5]);
+            // Hind Knee
+            viewer.setJointValue(`RR_lower_joint`, -step[6]);
+            viewer.setJointValue(`RL_lower_joint`, -step[6]);
+    
+            //Go1
+    
+            // Front Hip
+            viewer.setJointValue(`FR_thigh_joint`, -step[3]);
+            viewer.setJointValue(`FL_thigh_joint`, -step[3]);
+            // Front Knee
+            viewer.setJointValue(`FR_calf_joint`, -step[4]);
+            viewer.setJointValue(`FL_calf_joint`, -step[4]);
+            // Hind Hip
+            viewer.setJointValue(`RR_thigh_joint`, -step[5]);
+            viewer.setJointValue(`RL_thigh_joint`, -step[5]);
+            // Hind Knee
+            viewer.setJointValue(`RR_calf_joint`, -step[6]);
+            viewer.setJointValue(`RL_calf_joint`, -step[6]);
+        }
 
-        var q_des_front = new THREE.Vector3( 0.0, current_step[3], current_step[4]);
-        var q_des_rear = new THREE.Vector3( 0.0, current_step[5], current_step[6]);
-        var qd_des_front = new THREE.Vector3( 0.0, current_step[10], current_step[11]);
-        var qd_des_rear  = new THREE.Vector3( 0,0, current_step[12], current_step[13]);
-        var tau_front = new THREE.Vector3( 0.0, tau_mult * current_step[14+0] / 2.0, tau_mult * current_step[14+1] / 2.0);
-        var tau_rear = new THREE.Vector3( 0.0, tau_mult * current_step[14+2] / 2.0, tau_mult * current_step[14+3] / 2.0 );
+        if(current_timestep>=plan_timesteps+100) {
+            current_timestep=0;
+        }
 
-        //MIT cheetah
+        if(current_timestep<plan_timesteps) {
+            var current_step = get_plan_at_time(current_timestep)
+    
+            /*
+            var tau_mult = 1.2;
+            var q_des_front = new THREE.Vector3( 0.0, current_step[3], current_step[4]);
+            var q_des_rear = new THREE.Vector3( 0.0, current_step[5], current_step[6]);
+            var qd_des_front = new THREE.Vector3( 0.0, current_step[10], current_step[11]);
+            var qd_des_rear  = new THREE.Vector3( 0,0, current_step[12], current_step[13]);
+            var tau_front = new THREE.Vector3( 0.0, tau_mult * current_step[14+0] / 2.0, tau_mult * current_step[14+1] / 2.0);
+            var tau_rear = new THREE.Vector3( 0.0, tau_mult * current_step[14+2] / 2.0, tau_mult * current_step[14+3] / 2.0 );
+            */
+    
+            //console.log(current_step[0], current_step[0] / DEG2RAD)
+            //console.log(current_step[1], current_step[1] / DEG2RAD)
+            //console.log(current_step[2], current_step[2] / DEG2RAD)
 
-        // Front Hip
-        viewer.setJointValue(`abduct_fr_to_thigh_fr_j`, current_step[3]);
-        viewer.setJointValue(`abduct_fl_to_thigh_fl_j`, current_step[3]);
-        // Front Knee
-        viewer.setJointValue(`thigh_fr_to_knee_fr_j`, current_step[4]);
-        viewer.setJointValue(`thigh_fl_to_knee_fl_j`, current_step[4]);
-        // Hind Hip
-        viewer.setJointValue(`abduct_hr_to_thigh_hr_j`, current_step[5]);
-        viewer.setJointValue(`abduct_hl_to_thigh_hl_j`, current_step[5]);
-        // Hind Knee
-        viewer.setJointValue(`thigh_hr_to_knee_hr_j`, current_step[6]);
-        viewer.setJointValue(`thigh_hl_to_knee_hl_j`, current_step[6]);
+            set_robot_joint_rotation(current_step);
+        }
+        else {
+            var current_step_first = get_plan_at_time(0);
+            var current_step_last = get_plan_at_time(plan_timesteps-1);
 
-        //A1
+            var ratio = (current_timestep-plan_timesteps) / 100;
+            var between_step = new Float32Array(22);
 
-        // Front Hip
-        viewer.setJointValue(`FR_upper_joint`, -current_step[3]);
-        viewer.setJointValue(`FL_upper_joint`, -current_step[3]);
-        // Front Knee
-        viewer.setJointValue(`FR_lower_joint`, -current_step[4]);
-        viewer.setJointValue(`FL_lower_joint`, -current_step[4]);
-        // Hind Hip
-        viewer.setJointValue(`RR_upper_joint`, -current_step[5]);
-        viewer.setJointValue(`RL_upper_joint`, -current_step[5]);
-        // Hind Knee
-        viewer.setJointValue(`RR_lower_joint`, -current_step[6]);
-        viewer.setJointValue(`RL_lower_joint`, -current_step[6]);
+            between_step[2] = current_step_last[2];
+            between_step[3] = THREE.MathUtils.lerp(current_step_last[3], current_step_first[3], ratio);
+            between_step[4] = THREE.MathUtils.lerp(current_step_last[4], current_step_first[4], ratio);
 
-        //Go1
+            between_step[5] = THREE.MathUtils.lerp(current_step_last[5], current_step_first[5], ratio);
+            between_step[6] = THREE.MathUtils.lerp(current_step_last[6], current_step_first[6], ratio);
 
-        // Front Hip
-        viewer.setJointValue(`FR_thigh_joint`, -current_step[3]);
-        viewer.setJointValue(`FL_thigh_joint`, -current_step[3]);
-        // Front Knee
-        viewer.setJointValue(`FR_calf_joint`, -current_step[4]);
-        viewer.setJointValue(`FL_calf_joint`, -current_step[4]);
-        // Hind Hip
-        viewer.setJointValue(`RR_thigh_joint`, -current_step[5]);
-        viewer.setJointValue(`RL_thigh_joint`, -current_step[5]);
-        // Hind Knee
-        viewer.setJointValue(`RR_calf_joint`, -current_step[6]);
-        viewer.setJointValue(`RL_calf_joint`, -current_step[6]);
-
+            set_robot_joint_rotation(between_step);
+        }
         current_timestep++;
     }
-
 };
 
 const updateLoop = () => {
@@ -425,7 +454,7 @@ document.addEventListener('WebComponentsReady', () => {
     viewer.addEventListener('manipulate-start', e => animToggle.classList.remove('checked'));
     viewer.addEventListener('urdf-processed', e => updateAngles());
     updateLoop();
-    viewer.camera.position.set(-5.5, 3.5, 5.5);
+    viewer.camera.position.set(0.0, 0.15, 0.7);
 
 });
 
