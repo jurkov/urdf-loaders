@@ -26,8 +26,22 @@ const animToggle = document.getElementById('do-animate');
 const DEG2RAD = Math.PI / 180;
 const RAD2DEG = 1 / DEG2RAD;
 let sliders = {};
-let backflip_buffer;
+let buffer;
+let animation_buffer = [];
+let animToggleBufferArray = [];
 let current_timestep = 0;
+
+var animations_dat = [
+    "Mini_Cheetah/backflip.dat", 
+    "Mini_Cheetah/front_jump_data.dat",
+    "Mini_Cheetah/front_jump_extend_legs.dat",
+    "Mini_Cheetah/front_jump_pitchup.dat",
+    "Mini_Cheetah/front_jump_pitchup_v2.dat",
+    "Mini_Cheetah/front_jump_pitchup_v2_too_much.dat",
+    "Mini_Cheetah/front_jump_v3.dat", 
+    "Mini_Cheetah/front_jump_v4.dat", 
+    "Mini_Cheetah/front_jump_v5.dat",
+]
 
 // Global Functions
 const setColor = color => {
@@ -301,9 +315,9 @@ const updateAngles = () => {
     for (const name in resetJointValues) resetJointValues[name] = 0;
     viewer.setJointValues(resetJointValues);
 
-    if(backflip_buffer)
+    if(buffer)
     {
-        var plan_timesteps = backflip_buffer.byteLength / (4*22);
+        var plan_timesteps = buffer.byteLength / (4*22);
 
         function get_plan_at_time(timestep)
         {
@@ -316,13 +330,14 @@ const updateAngles = () => {
                 console.log("Timesteps is too high, not allowed.")
             }
             
-            return new Float32Array(backflip_buffer, timestep * 22*4, 22);
+            return new Float32Array(buffer, timestep * 22*4, 22);
         }
 
         function set_robot_joint_rotation(step) {
             if(viewer.robot)
             {
                 viewer.robot.rotation.y = step[2];
+                //viewer.robot.position.z = step[1];
             }   
             //MIT cheetah
                 
@@ -391,6 +406,13 @@ const updateAngles = () => {
             //console.log(current_step[1], current_step[1] / DEG2RAD)
             //console.log(current_step[2], current_step[2] / DEG2RAD)
 
+            //console.log(current_step[0], current_step[0] / DEG2RAD, current_step[1], current_step[1] / DEG2RAD);
+            
+            //console.log(current_step[18], current_step[18] / DEG2RAD)
+            //console.log(current_step[19], current_step[19] / DEG2RAD)
+            //console.log(current_step[20], current_step[20] / DEG2RAD)
+            //console.log(current_step[21], current_step[21] / DEG2RAD)
+
             set_robot_joint_rotation(current_step);
         }
         else {
@@ -414,10 +436,19 @@ const updateAngles = () => {
 };
 
 const updateLoop = () => {
+    animations_dat.forEach((dat) => {
+        if(animToggleBufferArray[dat]) {
+            if (animToggleBufferArray[dat].classList.contains('checked')) {
+                buffer = animation_buffer[dat];
+            }
+        }
+    });
+
 
     if (animToggle.classList.contains('checked')) {
         updateAngles();
     }
+    
 
     requestAnimationFrame(updateLoop);
 
@@ -458,40 +489,53 @@ document.addEventListener('WebComponentsReady', () => {
 
 });
 
-function ab2str(buf) {
-    return String.fromCharCode.apply(null, new Uint16Array(buf));
-}
-function str2ab(str) {
-    var buf = new ArrayBuffer(str.length*2); // 2 bytes for each char
-    var bufView = new Uint16Array(buf);
-    for (var i=0, strLen=str.length; i < strLen; i++) {
-    bufView[i] = str.charCodeAt(i);
-    }
-    return buf;
+function toggle_all_buffer(toggle_on) {
+    animations_dat.forEach((dat) => {
+        animToggleBufferArray[dat].classList.remove('checked');
+    });
+
+    toggle_on.classList.toggle('checked');
 }
 
-const loader = new THREE.FileLoader();
+animations_dat.forEach((dat) => {
+    //console.log(dat);
+    const loader = new THREE.FileLoader();
 
-//load a text file and output the result to the console
-loader.setResponseType( 'arraybuffer' ).load(
-    // resource URL
-    '../../../urdf/Mini_Cheetah/backflip.dat',
+    loader.setResponseType( 'arraybuffer' ).load(
+        // resource URL
+        '../../../urdf/' + dat,
+    
+        // onLoad callback
+        function ( buffer_load ) {
+            console.log("Loaded " + dat)
+            console.log(buffer_load.byteLength);
+            console.log(buffer_load.byteLength / (4*22));
 
-    // onLoad callback
-    function ( buffer ) {
-        backflip_buffer = buffer;
-        console.log(buffer.byteLength);
-        console.log(buffer.byteLength / (4*22));
-    },
+            animation_buffer[dat] = buffer_load;
+            buffer = animation_buffer[dat];
+        },
+    
+        // onProgress callback
+        function ( xhr ) {
+            console.log( (xhr.loaded / xhr.total * 100) + '% loaded' );
+        },
+    
+        // onError callback
+        function ( err ) {
+            console.error( 'An error happened' );
+        }
+    );
 
-    // onProgress callback
-    function ( xhr ) {
-        console.log( (xhr.loaded / xhr.total * 100) + '% loaded' );
-    },
+    document.addEventListener('WebComponentsReady', () => {
+        const newDiv = document.createElement("div");
+        newDiv.setAttribute("id", dat);
+        newDiv.setAttribute("class", "toggle");
+        const newContent = document.createTextNode("Animation " + dat);
+        newDiv.appendChild(newContent);
+        var referenceNode = document.querySelector('#do-animate');
+        referenceNode.after(newDiv);
 
-    // onError callback
-    function ( err ) {
-        console.error( 'An error happened' );
-    }
-);
-
+        animToggleBufferArray[dat] = document.getElementById(dat); 
+        animToggleBufferArray[dat].addEventListener('click', () => toggle_all_buffer(animToggleBufferArray[dat]));
+    });
+});
