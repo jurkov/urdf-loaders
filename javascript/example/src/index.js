@@ -41,6 +41,7 @@ var animations_dat = [
     "Mini_Cheetah/front_jump_v3.dat", 
     "Mini_Cheetah/front_jump_v4.dat", 
     "Mini_Cheetah/front_jump_v5.dat",
+    "Mini_Cheetah/mc_flip.dat", 
 ]
 
 // Global Functions
@@ -421,8 +422,13 @@ const updateAngles = () => {
 
             var ratio = (current_timestep-plan_timesteps) / 100;
             var between_step = new Float32Array(22);
-
-            between_step[2] = current_step_last[2];
+            if (current_step_last[2]<(-180.0 *DEG2RAD)) {
+                between_step[2] = THREE.MathUtils.lerp(current_step_last[2] + (360.0 *DEG2RAD), current_step_first[2], ratio);
+            }
+            else {
+                between_step[2] = THREE.MathUtils.lerp(current_step_last[2], current_step_first[2], ratio);
+            }
+            
             between_step[3] = THREE.MathUtils.lerp(current_step_last[3], current_step_first[3], ratio);
             between_step[4] = THREE.MathUtils.lerp(current_step_last[4], current_step_first[4], ratio);
 
